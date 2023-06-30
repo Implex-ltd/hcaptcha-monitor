@@ -1,0 +1,1 @@
+HcMonitor is a script for downloading and classifying the latest Hcaptcha updates to aid in the reverse engineering process.
