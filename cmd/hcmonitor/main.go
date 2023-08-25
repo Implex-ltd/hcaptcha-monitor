@@ -77,10 +77,11 @@ func DownloadVersionFiles(v *HcVersion) {
 
 	// download asset files
 	assets := map[string]string{
-		"api.js":        "https://hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaOnLoad",
-		"hcaptcha.js":   fmt.Sprintf("https://newassets.hcaptcha.com/captcha/v1/%s/hcaptcha.js", v.Version),
-		"challenge.js":  fmt.Sprintf("https://newassets.hcaptcha.com/captcha/challenge/image_label_binary/%s/challenge.js", v.Version),
-		"hcaptcha.html": fmt.Sprintf("https://newassets.hcaptcha.com/captcha/v1/%s/static/hcaptcha.html", v.Version),
+		"api.js":                               "https://hcaptcha.com/1/api.js?render=explicit&onload=hcaptchaOnLoad",
+		"hcaptcha.js":                          fmt.Sprintf("https://newassets.hcaptcha.com/captcha/v1/%s/hcaptcha.js", v.Version),
+		"image_label_binary_challenge.js":      fmt.Sprintf("https://newassets.hcaptcha.com/captcha/challenge/image_label_binary/%s/challenge.js", v.Version),
+		"image_label_area_select_challenge.js": fmt.Sprintf("https://newassets.hcaptcha.com/captcha/challenge/image_label_area_select/%s/challenge.js", v.Version),
+		"hcaptcha.html":                        fmt.Sprintf("https://newassets.hcaptcha.com/captcha/v1/%s/static/hcaptcha.html", v.Version),
 	}
 
 	for name, url := range assets {
@@ -151,32 +152,29 @@ func main() {
 			continue
 		}
 
-		fmt.Printf("Version: %s\n", version)
+		v := &HcVersion{
+			Version:     version,
+			ReleaseDate: time.Now().Unix(),
+		}
+
+		jwt, err := ScrapeJwt(v)
+		if utils.HandleError(err) {
+			panic(err)
+		}
+
+		hc_version := strings.Split(jwt.VersionBaseUrl, "https://newassets.hcaptcha.com/c/")[1]
+		fmt.Printf("Version: %s, Hsw: %s\n", version, hc_version)
 
 		found := false
 		for _, v := range versionList {
-			if v.Version == version {
+			if v.Version == version && v.HswVersion == hc_version {
 				found = true
 				break
 			}
 		}
 
 		if !found {
-			v := &HcVersion{
-				Version:     version,
-				ReleaseDate: time.Now().Unix(),
-			}
-
-			jwt, err := ScrapeJwt(v)
-
-			if utils.HandleError(err) {
-				panic(err)
-			}
-
-			hc_version := strings.Split(jwt.VersionBaseUrl, "https://newassets.hcaptcha.com/c/")[1]
-
 			v.HswVersion = hc_version
-
 			versionList = append(versionList, v)
 			go DownloadVersionFiles(v)
 		}
